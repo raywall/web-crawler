@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace WebCrawlerConsoleApp
@@ -29,7 +26,7 @@ namespace WebCrawlerConsoleApp
 
                 Space(3);
 
-                await git.Conectar("raywall.malheiros@gmail.com", "");
+                await git.Conectar("raywall.malheiros@gmail.com", "RAywall123#");
 
                 Space(3);
 

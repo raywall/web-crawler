@@ -11,6 +11,7 @@ namespace WebCrawlerConsoleApp
 {
     public class GitCrawlerClient
     {
+        private CookieContainer cookies = null;
         private HttpWebRequest client = null;
         private HtmlDocument doc = null;
 
@@ -107,39 +108,53 @@ namespace WebCrawlerConsoleApp
         {
             BaseURL = base_url;
             doc = new HtmlDocument();
+            client = (HttpWebRequest)WebRequest.Create(BaseURL);
         }
 
-        private async System.Threading.Tasks.Task<string> RequestAsync(string url, Dictionary<string, string> data = null)
+        private async Task<string> RequestAsync(string url, Dictionary<string, string> data = null)
         {
             var conteudo = string.Empty;
 
             try
             {
-                var request = (HttpWebRequest)WebRequest.Create(url);
+                client = (HttpWebRequest)WebRequest.Create(url);
+                
+                client.AllowAutoRedirect = false;
+                client.CookieContainer = cookies;
+                client.KeepAlive = true;
+
                 HttpWebResponse response = null;
 
-                if (data != null)
+                if (data == null)
+                    response = (HttpWebResponse)client.GetResponse();
+
+                else
                 {
                     var content = Encoding.ASCII.GetBytes(string.Join("&", data.Select(s => $"{s.Key}={s.Value}").ToArray()));
 
-                    request.Method = "POST";
-                    request.ContentType = "application/x-www-form-urlencoded";
-                    request.ContentLength = content.Length;
-
-                    using (var stream = request.GetRequestStream())
+                    client.Method = "POST";
+                    client.ContentType = "application/x-www-form-urlencoded";
+                    client.ContentLength = content.Length;
+                    
+                    using (var stream = await client.GetRequestStreamAsync())
                         stream.Write(content, 0, content.Length);
 
-                    response = (HttpWebResponse)request.GetResponse();
+                    response = (HttpWebResponse)client.GetResponse();
                 }
 
-                else
-                    response = (HttpWebResponse)request.GetResponse();
+                if (response.Cookies != null && response.Cookies.Count > 0)
+                {
+                    cookies = new CookieContainer();
+
+                    foreach (Cookie cookie in response.Cookies)
+                        cookies.Add(cookie);
+                }
 
                 if (response != null && response.StatusCode == HttpStatusCode.OK)
                 {
                     StreamReader readStream = null;
                     var receiveStream = response.GetResponseStream();
-
+                    
                     readStream = string.IsNullOrEmpty(response.CharacterSet)
                         ? new StreamReader(receiveStream)
                         : new StreamReader(receiveStream, Encoding.GetEncoding(response.CharacterSet));
@@ -148,6 +163,8 @@ namespace WebCrawlerConsoleApp
 
                     response.Close();
                     readStream.Close();
+
+                    return conteudo;
                 }
             }
             catch (WebException ex)
@@ -155,7 +172,7 @@ namespace WebCrawlerConsoleApp
                 OnError?.Invoke(ex);
             }
 
-            return conteudo;
+            return string.Empty;
         } 
     }
 }
