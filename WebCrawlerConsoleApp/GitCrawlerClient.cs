@@ -1,18 +1,15 @@
 ﻿using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace WebCrawlerConsoleApp
 {
     public class GitCrawlerClient
     {
-        private CookieContainer cookies = null;
-        private HttpWebRequest client = null;
+        private RequisicaoHttp client = null;
         private HtmlDocument doc = null;
 
         #region Events
@@ -25,13 +22,13 @@ namespace WebCrawlerConsoleApp
         #endregion
 
         #region Crawler methods
-        public async Task<List<string>> ListarProjetos()
+        public List<string> ListarProjetos()
         {
             var projetos = new List<string>();
             
             try
             {
-                var pagina = await RequestAsync($"{BaseURL}/raywall?tab=repositories");
+                var pagina = client.CarregarHtml($"{BaseURL}/raywall?tab=repositories");
                 doc.LoadHtml(pagina);
 
                 foreach (var node in doc.DocumentNode.SelectNodes("//a[@itemprop='name codeRepository']"))
@@ -45,11 +42,11 @@ namespace WebCrawlerConsoleApp
             return projetos;
         }
 
-        public async Task<string> GetProfileImnage(string file_path)
+        public string GetProfileImnage(string file_path)
         {
             try
             {
-                var pagina = await RequestAsync($"{BaseURL}/raywall");
+                var pagina = client.CarregarHtml($"{BaseURL}/raywall");
                 doc.LoadHtml(pagina);
 
                 var avatar = doc.DocumentNode.SelectSingleNode("//img[@class='avatar avatar-user width-full border bg-white']");
@@ -67,20 +64,20 @@ namespace WebCrawlerConsoleApp
             return string.Empty;
         }
 
-        public async Task<bool> Conectar(string usuario, string senha)
+        public bool Conectar(string usuario, string senha)
         {
             try
             {
-                var pagina = await RequestAsync($"{BaseURL}/login");
+                var pagina = client.CarregarHtml($"{BaseURL}/login");
                 doc.LoadHtml(pagina);
 
-                var data = new Dictionary<string, string>
+                var data = new NameValueCollection()
                 {
                     { "commit", "Sign in" },
                     { "authenticity_token", doc.DocumentNode.SelectSingleNode("//input[@name='authenticity_token']").Attributes["value"].Value },
                     { "ga_id", "" },
-                    { "login", "raywall.malheiros@gmail.com" },
-                    { "password", "RAywall123#" },
+                    { "login", usuario },
+                    { "password", senha },
                     { "webauthn-support", "supported" },
                     { "webauthn-iuvpaa-support", "unsupported" },
                     { "return_to", "" },
@@ -89,10 +86,9 @@ namespace WebCrawlerConsoleApp
                     { "timestamp_secret", doc.DocumentNode.SelectSingleNode("//input[@name='timestamp_secret']").Attributes["value"].Value }
                 };
 
-                pagina = await RequestAsync($"{BaseURL}/login", data);
-                doc.LoadHtml(pagina);
+                pagina = client.CarregarHtml($"{BaseURL}/session", data, $"{BaseURL}/login");
 
-                Console.WriteLine();
+                return (pagina.Contains("You are being") & pagina.Contains("redirected"));
             }
             catch (Exception ex)
             {
@@ -108,71 +104,13 @@ namespace WebCrawlerConsoleApp
         {
             BaseURL = base_url;
             doc = new HtmlDocument();
-            client = (HttpWebRequest)WebRequest.Create(BaseURL);
+
+            client = new RequisicaoHttp(true);
+
+            client.AcceptHeader = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9";
+            client.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36";
+            client.AcceptLanguage = "pt-BR,pt;q=0.9";
+            client.Timeout = 3000;
         }
-
-        private async Task<string> RequestAsync(string url, Dictionary<string, string> data = null)
-        {
-            var conteudo = string.Empty;
-
-            try
-            {
-                client = (HttpWebRequest)WebRequest.Create(url);
-                
-                client.AllowAutoRedirect = false;
-                client.CookieContainer = cookies;
-                client.KeepAlive = true;
-
-                HttpWebResponse response = null;
-
-                if (data == null)
-                    response = (HttpWebResponse)client.GetResponse();
-
-                else
-                {
-                    var content = Encoding.ASCII.GetBytes(string.Join("&", data.Select(s => $"{s.Key}={s.Value}").ToArray()));
-
-                    client.Method = "POST";
-                    client.ContentType = "application/x-www-form-urlencoded";
-                    client.ContentLength = content.Length;
-                    
-                    using (var stream = await client.GetRequestStreamAsync())
-                        stream.Write(content, 0, content.Length);
-
-                    response = (HttpWebResponse)client.GetResponse();
-                }
-
-                if (response.Cookies != null && response.Cookies.Count > 0)
-                {
-                    cookies = new CookieContainer();
-
-                    foreach (Cookie cookie in response.Cookies)
-                        cookies.Add(cookie);
-                }
-
-                if (response != null && response.StatusCode == HttpStatusCode.OK)
-                {
-                    StreamReader readStream = null;
-                    var receiveStream = response.GetResponseStream();
-                    
-                    readStream = string.IsNullOrEmpty(response.CharacterSet)
-                        ? new StreamReader(receiveStream)
-                        : new StreamReader(receiveStream, Encoding.GetEncoding(response.CharacterSet));
-
-                    conteudo = readStream.ReadToEnd().Replace("\n", string.Empty);
-
-                    response.Close();
-                    readStream.Close();
-
-                    return conteudo;
-                }
-            }
-            catch (WebException ex)
-            {
-                OnError?.Invoke(ex);
-            }
-
-            return string.Empty;
-        } 
     }
 }

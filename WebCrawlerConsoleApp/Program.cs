@@ -21,17 +21,20 @@ namespace WebCrawlerConsoleApp
             try
             {
                 Console.WriteLine("Consulta de projetos no GitHub");
-                foreach (var projeto in await git.ListarProjetos())
+                foreach (var projeto in git.ListarProjetos())
                     Console.WriteLine($"Projeto: {projeto}");
 
                 Space(3);
 
-                await git.Conectar("raywall.malheiros@gmail.com", "RAywall123#");
+                Console.WriteLine("Consulta de projetos no GitHub (logado)");
+                if (git.Conectar("<email de acesso ao seu github>", "<senha do seu github>"))
+                    foreach (var projeto in git.ListarProjetos())
+                        Console.WriteLine($"Projeto: {projeto}");
 
                 Space(3);
 
                 Console.WriteLine("Realizando download do avatar no GitHub");
-                Console.WriteLine(await git.GetProfileImnage(Environment.CurrentDirectory));
+                Console.WriteLine(git.GetProfileImnage(Environment.CurrentDirectory));
 
                 Space(3);
 
