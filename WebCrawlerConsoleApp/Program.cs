@@ -29,7 +29,7 @@ namespace WebCrawlerConsoleApp
 
                 Space(3);
 
-                await git.Conectar("raywall.malheiros@gmail.com", "RAywall123#");
+                await git.Conectar("raywall.malheiros@gmail.com", "");
 
                 Space(3);
 
