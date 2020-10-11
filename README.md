@@ -20,11 +20,11 @@ http://loterias.caixa.gov.br/wps/portal/loterias/landing/megasena/<br/><br/>
 4. Efetuamos duas requisições, uma para carregar os cookies no método RequisicaoHttp, e na sequencia a requisição efetuada pelo AJAX
 ```
 public List<int> Megasena()
-        {
-            var dezenas = new List<int>();
+{
+        var dezenas = new List<int>();
 
-            try
-            {
+        try
+        {
                 var pagina = client.CarregarHtml($"{BaseURL}/wps/portal/loterias/landing/megasena/");
                 pagina = client.CarregarHtml($"{BaseURL}/wps/portal/loterias/landing/megasena/!ut/p/a1/04_Sj9CPykssy0xPLMnMz0vMAfGjzOLNDH0MPAzcDbwMPI0sDBxNXAOMwrzCjA0sjIEKIoEKnN0dPUzMfQwMDEwsjAw8XZw8XMwtfQ0MPM2I02-AAzgaENIfrh-FqsQ9wNnUwNHfxcnSwBgIDUyhCvA5EawAjxsKckMjDDI9FQE-F4ca/dl5/d5/L2dBISEvZ0FBIS9nQSEh/pw/Z7_HGK818G0KO6H80AU71KG7J0072/res/id=buscaResultado/c=cacheLevelPage/?timestampAjax=1602443186876");
 
@@ -46,14 +46,14 @@ public List<int> Megasena()
                 Console.WriteLine($"Número do concurso: {result["numero"]}");
                 Console.WriteLine($"Data do sorteio: {result["dataApuracao"]}");
                 Console.WriteLine($"Números sorteados: {string.Join(", ", dezenas.ToArray())}");
-            }
-            catch (Exception ex)
-            {
-                OnError?.Invoke(ex);
-            }
-
-            return dezenas;
         }
+        catch (Exception ex)
+        {
+                OnError?.Invoke(ex);
+        }
+
+        return dezenas;
+}
 ```
 
 5. Pronto! Já estamos extraindo os dados do sorteio do site da Caixa.
