@@ -8,9 +8,14 @@ namespace WebCrawlerConsoleApp
         static async Task Main(string[] args)
         {
             var git = new GitCrawlerClient(@"https://github.com");
+            var caixa = new CaixaCrawlerClient(@"http://loterias.caixa.gov.br/");
             var google = new GoogleCrawlerClient(@"https://www.google.com");
-
+            
             git.OnError += ((Exception ex) => {
+                Console.WriteLine(ex.ToString());
+            });
+
+            caixa.OnError += ((Exception ex) => {
                 Console.WriteLine(ex.ToString());
             });
 
@@ -35,6 +40,11 @@ namespace WebCrawlerConsoleApp
 
                 Console.WriteLine("Realizando download do avatar no GitHub");
                 Console.WriteLine(git.GetProfileImnage(Environment.CurrentDirectory));
+
+                Space(3);
+
+                Console.WriteLine("Extraindo resultado da MegaSena no site da Caixa");
+                var result = caixa.Megasena();
 
                 Space(3);
 
